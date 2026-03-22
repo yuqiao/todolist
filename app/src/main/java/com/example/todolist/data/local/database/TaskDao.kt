@@ -55,4 +55,16 @@ interface TaskDao {
 
     @Query("SELECT * FROM tasks WHERE isCompleted = 1 AND (isToday = 1 OR dueDate = :todayEpochDay) ORDER BY updatedAt DESC")
     fun getTodayCompletedTasks(todayEpochDay: Long): Flow<List<TaskEntity>>
+
+    /**
+     * 获取项目下的任务
+     */
+    @Query("SELECT * FROM tasks WHERE projectId = :projectId AND isCompleted = 0 ORDER BY sortOrder ASC")
+    fun getTasksByProject(projectId: String): Flow<List<TaskEntity>>
+
+    /**
+     * 清除任务的 projectId（用于删除项目时）
+     */
+    @Query("UPDATE tasks SET projectId = NULL, updatedAt = :updatedAt WHERE projectId = :projectId")
+    suspend fun clearProjectId(projectId: String, updatedAt: Long)
 }

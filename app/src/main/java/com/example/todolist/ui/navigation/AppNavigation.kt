@@ -15,11 +15,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.todolist.ui.inbox.InboxScreen
+import com.example.todolist.ui.projectdetail.ProjectDetailScreen
+import com.example.todolist.ui.projects.ProjectsScreen
 import com.example.todolist.ui.today.TodayScreen
 import com.example.todolist.ui.upcoming.UpcomingScreen
 
@@ -85,7 +89,15 @@ fun AppNavigation(
                 UpcomingScreen()
             }
             composable(Screen.Projects.route) {
-                PlaceholderScreen(title = "项目")
+                ProjectsScreen(navController = navController)
+            }
+            composable(
+                route = "projects/{projectId}",
+                arguments = listOf(navArgument("projectId") { type = NavType.StringType })
+            ) {
+                ProjectDetailScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
             }
             composable(Screen.Tags.route) {
                 PlaceholderScreen(title = "标签")
