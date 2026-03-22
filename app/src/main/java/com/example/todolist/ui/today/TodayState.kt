@@ -4,6 +4,8 @@ import com.example.todolist.domain.model.Task
 
 data class TodayState(
     val tasks: List<Task> = emptyList(),
+    val completedTasks: List<Task> = emptyList(),
+    val isCompletedExpanded: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null,
     val showQuickAdd: Boolean = false,
@@ -18,4 +20,5 @@ sealed interface TodayIntent {
     data object ShowQuickAdd : TodayIntent
     data object HideQuickAdd : TodayIntent
     data class UpdateQuickAddText(val text: String) : TodayIntent
+    data object ToggleCompletedExpanded : TodayIntent
 }

@@ -2,6 +2,7 @@ package com.example.todolist.ui.today
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.todolist.data.repository.TaskRepository
 import com.example.todolist.domain.usecase.task.AddTaskUseCase
 import com.example.todolist.domain.usecase.task.CompleteTaskUseCase
 import com.example.todolist.domain.usecase.task.DeleteTaskUseCase
@@ -19,7 +20,8 @@ class TodayViewModel @Inject constructor(
     private val getTodayTasksUseCase: GetTodayTasksUseCase,
     private val addTaskUseCase: AddTaskUseCase,
     private val completeTaskUseCase: CompleteTaskUseCase,
-    private val deleteTaskUseCase: DeleteTaskUseCase
+    private val deleteTaskUseCase: DeleteTaskUseCase,
+    private val taskRepository: TaskRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TodayState())
@@ -27,17 +29,22 @@ class TodayViewModel @Inject constructor(
 
     init {
         loadTasks()
+        loadCompletedTasks()
     }
 
     fun handleIntent(intent: TodayIntent) {
         when (intent) {
-            is TodayIntent.LoadTasks -> loadTasks()
+            is TodayIntent.LoadTasks -> {
+                loadTasks()
+                loadCompletedTasks()
+            }
             is TodayIntent.CompleteTask -> completeTask(intent.taskId, intent.completed)
             is TodayIntent.DeleteTask -> deleteTask(intent.task)
             is TodayIntent.AddQuickTask -> addQuickTask(intent.title)
             is TodayIntent.ShowQuickAdd -> showQuickAdd()
             is TodayIntent.HideQuickAdd -> hideQuickAdd()
             is TodayIntent.UpdateQuickAddText -> updateQuickAddText(intent.text)
+            is TodayIntent.ToggleCompletedExpanded -> toggleCompletedExpanded()
         }
     }
 
@@ -46,6 +53,14 @@ class TodayViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true) }
             getTodayTasksUseCase().collect { tasks ->
                 _state.update { it.copy(tasks = tasks, isLoading = false) }
+            }
+        }
+    }
+
+    private fun loadCompletedTasks() {
+        viewModelScope.launch {
+            taskRepository.getTodayCompletedTasks().collect { completedTasks ->
+                _state.update { it.copy(completedTasks = completedTasks) }
             }
         }
     }
@@ -79,5 +94,9 @@ class TodayViewModel @Inject constructor(
 
     private fun updateQuickAddText(text: String) {
         _state.update { it.copy(quickAddText = text) }
+    }
+
+    private fun toggleCompletedExpanded() {
+        _state.update { it.copy(isCompletedExpanded = !it.isCompletedExpanded) }
     }
 }

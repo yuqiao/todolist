@@ -77,4 +77,14 @@ class TaskRepository @Inject constructor(
             entities.map { it.toDomain() }
         }
     }
+
+    /**
+     * 获取今日已完成任务
+     */
+    fun getTodayCompletedTasks(): Flow<List<Task>> {
+        val today = LocalDate.now().toEpochDay()
+        return taskDao.getTodayCompletedTasks(today).map { entities ->
+            entities.map { it.toDomain() }
+        }
+    }
 }
