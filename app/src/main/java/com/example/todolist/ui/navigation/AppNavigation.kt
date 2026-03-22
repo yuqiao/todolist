@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.Label
@@ -18,7 +19,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.todolist.ui.inbox.InboxScreen
 import com.example.todolist.ui.today.TodayScreen
+import com.example.todolist.ui.upcoming.UpcomingScreen
 
 sealed class Screen(
     val route: String,
@@ -27,6 +30,7 @@ sealed class Screen(
 ) {
     data object Today : Screen("today", "今日", Icons.Default.DateRange)
     data object Inbox : Screen("inbox", "收件箱", Icons.Default.Inbox)
+    data object Upcoming : Screen("upcoming", "计划", Icons.Default.Event)
     data object Projects : Screen("projects", "项目", Icons.Default.Folder)
     data object Tags : Screen("tags", "标签", Icons.Default.Label)
 }
@@ -41,7 +45,13 @@ fun AppNavigation(
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route
 
-                listOf(Screen.Today, Screen.Inbox, Screen.Projects, Screen.Tags).forEach { screen ->
+                listOf(
+                    Screen.Today,
+                    Screen.Inbox,
+                    Screen.Upcoming,
+                    Screen.Projects,
+                    Screen.Tags
+                ).forEach { screen ->
                     NavigationBarItem(
                         icon = { Icon(screen.icon, contentDescription = screen.title) },
                         label = { Text(screen.title) },
@@ -69,7 +79,10 @@ fun AppNavigation(
                 TodayScreen()
             }
             composable(Screen.Inbox.route) {
-                PlaceholderScreen(title = "收件箱")
+                InboxScreen()
+            }
+            composable(Screen.Upcoming.route) {
+                UpcomingScreen()
             }
             composable(Screen.Projects.route) {
                 PlaceholderScreen(title = "项目")

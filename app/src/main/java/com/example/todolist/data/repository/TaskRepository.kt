@@ -64,7 +64,7 @@ class TaskRepository @Inject constructor(
      * 获取收件箱任务
      */
     fun getInboxTasks(): Flow<List<Task>> {
-        return taskDao.getInboxTasks().map { entities ->
+        return taskDao.getInboxTasksByDate().map { entities ->
             entities.map { it.toDomain() }
         }
     }
@@ -86,5 +86,27 @@ class TaskRepository @Inject constructor(
         return taskDao.getTodayCompletedTasks(today).map { entities ->
             entities.map { it.toDomain() }
         }
+    }
+
+    /**
+     * 获取未来日期的任务（计划）
+     */
+    fun getUpcomingTasks(): Flow<List<Task>> {
+        val today = LocalDate.now().toEpochDay()
+        return taskDao.getUpcomingTasks(today).map { entities ->
+            entities.map { it.toDomain() }
+        }
+    }
+
+    /**
+     * 更新任务日期
+     */
+    suspend fun updateTaskDate(taskId: String, dueDate: LocalDate?, isToday: Boolean) {
+        taskDao.updateTaskDate(
+            taskId = taskId,
+            dueDate = dueDate?.toEpochDay(),
+            isToday = isToday,
+            updatedAt = System.currentTimeMillis()
+        )
     }
 }
