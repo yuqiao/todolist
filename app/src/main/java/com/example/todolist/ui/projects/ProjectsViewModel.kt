@@ -29,6 +29,7 @@ class ProjectsViewModel @Inject constructor(
     fun handleIntent(intent: ProjectsIntent) {
         when (intent) {
             is ProjectsIntent.LoadProjects -> loadProjects()
+            is ProjectsIntent.ToggleExpand -> toggleExpand(intent.projectId)
             is ProjectsIntent.ShowAddDialog -> showAddDialog()
             is ProjectsIntent.HideAddDialog -> hideAddDialog()
             is ProjectsIntent.EditProject -> editProject(intent.project)
@@ -45,6 +46,32 @@ class ProjectsViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true) }
             projectRepository.getAllProjects().collect { projects ->
                 _state.update { it.copy(projects = projects, isLoading = false) }
+            }
+        }
+    }
+
+    private fun toggleExpand(projectId: String) {
+        viewModelScope.launch {
+            val currentExpanded = _state.value.expandedProjectId
+            val newExpanded = if (currentExpanded == projectId) null else projectId
+
+            _state.update { it.copy(expandedProjectId = newExpanded) }
+
+            // 如果展开，加载任务
+            if (newExpanded != null && !_state.value.projectTasks.containsKey(newExpanded)) {
+                loadProjectTasks(newExpanded)
+            }
+        }
+    }
+
+    private fun loadProjectTasks(projectId: String) {
+        viewModelScope.launch {
+            projectRepository.getProjectTasks(projectId).collect { tasks ->
+                _state.update { state ->
+                    state.copy(
+                        projectTasks = state.projectTasks + (projectId to tasks)
+                    )
+                }
             }
         }
     }

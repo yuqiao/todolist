@@ -2,9 +2,12 @@ package com.example.todolist.ui.projects
 
 import androidx.compose.ui.graphics.Color
 import com.example.todolist.domain.model.Project
+import com.example.todolist.domain.model.Task
 
 data class ProjectsState(
     val projects: List<Project> = emptyList(),
+    val projectTasks: Map<String, List<Task>> = emptyMap(),
+    val expandedProjectId: String? = null,
     val isLoading: Boolean = false,
     val showAddDialog: Boolean = false,
     val editingProject: Project? = null,
@@ -14,6 +17,7 @@ data class ProjectsState(
 
 sealed interface ProjectsIntent {
     data object LoadProjects : ProjectsIntent
+    data class ToggleExpand(val projectId: String) : ProjectsIntent
     data object ShowAddDialog : ProjectsIntent
     data object HideAddDialog : ProjectsIntent
     data class EditProject(val project: Project) : ProjectsIntent

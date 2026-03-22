@@ -1,5 +1,6 @@
 package com.example.todolist.ui.projects
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -10,6 +11,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,7 +23,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.todolist.domain.model.Project
+import com.example.todolist.domain.model.Task
 import com.example.todolist.ui.components.QuickAddButton
+import com.example.todolist.ui.components.TaskItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,8 +81,16 @@ fun ProjectsScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(state.projects, key = { it.id }) { project ->
+                    val isExpanded = state.expandedProjectId == project.id
+                    val tasks = state.projectTasks[project.id] ?: emptyList()
+
                     ProjectItem(
                         project = project,
+                        isExpanded = isExpanded,
+                        tasks = tasks,
+                        onToggleExpand = {
+                            viewModel.handleIntent(ProjectsIntent.ToggleExpand(project.id))
+                        },
                         onClick = {
                             navController.navigate("projects/${project.id}")
                         },
@@ -86,6 +99,12 @@ fun ProjectsScreen(
                         },
                         onDelete = {
                             viewModel.handleIntent(ProjectsIntent.DeleteProject(project.id))
+                        },
+                        onCompleteTask = { taskId, completed ->
+                            // 任务完成操作在项目详情页处理
+                        },
+                        onTaskClick = {
+                            // 任务点击操作在项目详情页处理
                         }
                     )
                 }
@@ -123,79 +142,136 @@ fun ProjectsScreen(
 @Composable
 private fun ProjectItem(
     project: Project,
+    isExpanded: Boolean,
+    tasks: List<Task>,
+    onToggleExpand: () -> Unit,
     onClick: () -> Unit,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onCompleteTask: (String, Boolean) -> Unit,
+    onTaskClick: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
+        modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = MaterialTheme.shapes.medium
     ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // 颜色圆点
-            Box(
+        Column {
+            // 项目标题行
+            Row(
                 modifier = Modifier
-                    .size(24.dp)
-                    .clip(CircleShape)
-                    .background(project.color)
-            )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            // 项目名称
-            Text(
-                text = project.name,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f)
-            )
-
-            // 任务数量
-            if (project.taskCount > 0) {
-                Text(
-                    text = "${project.taskCount}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    .padding(16.dp)
+                    .fillMaxWidth()
+                    .clickable { onToggleExpand() },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 展开/收起箭头
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (isExpanded) "收起" else "展开",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            }
 
-            // 更多操作
-            Box {
-                IconButton(onClick = { showMenu = true }) {
-                    Text("⋯", style = MaterialTheme.typography.titleLarge)
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // 颜色圆点
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(project.color)
+                )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // 项目名称
+                Text(
+                    text = project.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // 任务数量
+                if (project.taskCount > 0) {
+                    Text(
+                        text = "${project.taskCount}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
 
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("编辑") },
-                        onClick = {
-                            showMenu = false
-                            onEdit()
-                        },
-                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("删除") },
-                        onClick = {
-                            showMenu = false
-                            onDelete()
-                        },
-                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
-                        colors = MenuDefaults.itemColors(
-                            textColor = MaterialTheme.colorScheme.error
+                // 更多操作
+                Box {
+                    IconButton(onClick = { showMenu = true }) {
+                        Text("⋯", style = MaterialTheme.typography.titleLarge)
+                    }
+
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("查看详情") },
+                            onClick = {
+                                showMenu = false
+                                onClick()
+                            },
+                            leadingIcon = { Icon(Icons.Default.ExpandMore, contentDescription = null) }
                         )
+                        DropdownMenuItem(
+                            text = { Text("编辑") },
+                            onClick = {
+                                showMenu = false
+                                onEdit()
+                            },
+                            leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("删除") },
+                            onClick = {
+                                showMenu = false
+                                onDelete()
+                            },
+                            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                            colors = MenuDefaults.itemColors(
+                                textColor = MaterialTheme.colorScheme.error
+                            )
+                        )
+                    }
+                }
+            }
+
+            // 展开时显示任务列表
+            AnimatedVisibility(visible = isExpanded && tasks.isNotEmpty()) {
+                Column(
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
+                ) {
+                    tasks.forEach { task ->
+                        TaskItem(
+                            task = task,
+                            onCompleteClick = { completed ->
+                                onCompleteTask(task.id, completed)
+                            },
+                            onTaskClick = onTaskClick,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    }
+                }
+            }
+
+            // 展开但无任务时显示提示
+            AnimatedVisibility(visible = isExpanded && tasks.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 48.dp, end = 16.dp, bottom = 16.dp)
+                ) {
+                    Text(
+                        text = "暂无任务",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
